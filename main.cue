@@ -4,6 +4,7 @@ import (
     "b.l/bl"
     "stackbrew.io/file"
     "stackbrew.io/aws"
+    "stackbrew.io/aws/s3"
     "stackbrew.io/aws/ecr"
 )
 
@@ -14,6 +15,7 @@ input: {
 
 config: {
 
+    // Generate a new directory from the HTML code
     htmlSource: file.Create & {
         filename: "index.html"
         contents: """
@@ -24,6 +26,7 @@ config: {
             """
     }
 
+    // Build a new docker container from the html source above
     dockerImage: bl.Build & {
         context: htmlSource.result
         dockerfile: """
@@ -34,6 +37,7 @@ config: {
 
     imageTarget: "125635003186.dkr.ecr.us-east-2.amazonaws.com/docs-demo:nginx-static"
 
+    // Login to AWS ECR
     ecrCredentials: ecr.Credentials & {
         config: aws.Config & {
             region:    "us-east-2"
@@ -43,10 +47,22 @@ config: {
         target: imageTarget
     }
 
+    // Push the docker image to AWS ECR
     imagePush: bl.Push & {
         source:      dockerImage.image
         target:      imageTarget
         credentials: ecrCredentials.credentials
+    }
+
+    // Deploy the static index.html to S3
+    deployS3: s3.Put & {
+        config: aws.Config & {
+            region:    "us-west-2"
+            accessKey: input.awsAccessKey
+            secretKey: input.awsSecretKey
+        }
+        source: htmlSource.result
+        target: "s3://hello-s3.infralabs.io/"
     }
 
     // Deploy resulted image to ECS
@@ -76,6 +92,7 @@ config: {
 }
 
 output: {
+    urlS3: "http://hello-s3.infralabs.io/"
     urlEKS: "https://\(config.deployEKS.app.hostname)/"
     urlECS: "https://\(config.deployECS.app.hostname)/"
     imageRef: config.imagePush.ref

@@ -5,7 +5,7 @@ import (
     "b.l/bl"
     "stackbrew.io/aws"
     "stackbrew.io/aws/eks"
-    "stackbrew.io/krane"
+    "stackbrew.io/kubernetes"
 )
 
 kubernetesConfigYAML :: {
@@ -101,7 +101,7 @@ SimpleAppEKS :: {
         cluster: infra.cluster
     }
 
-    deploy: krane.Deploy & {
+    deploy: kubernetes.Apply & {
         // Kube auth config file generated above
         kubeconfig: kubeAuth.kubeconfig
         // Namespace to use on the Kube cluster
