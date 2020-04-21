@@ -37,12 +37,16 @@ config: {
 
     imageTarget: "125635003186.dkr.ecr.us-east-2.amazonaws.com/docs-demo:nginx-static"
 
+    awsCreds: {
+        accessKey: input.awsAccessKey
+        secretKey: input.awsSecretKey
+    }
+
     // Login to AWS ECR
     ecrCredentials: ecr.Credentials & {
         config: aws.Config & {
-            region:    "us-east-2"
-            accessKey: input.awsAccessKey
-            secretKey: input.awsSecretKey
+            region: "us-east-2"
+            awsCreds
         }
         target: imageTarget
     }
@@ -57,9 +61,8 @@ config: {
     // Deploy the static index.html to S3
     deployS3: s3.Put & {
         config: aws.Config & {
-            region:    "us-west-2"
-            accessKey: input.awsAccessKey
-            secretKey: input.awsSecretKey
+            region: "us-west-2"
+            awsCreds
         }
         source: htmlSource.result
         target: "s3://hello-s3.infralabs.io/"
@@ -67,10 +70,7 @@ config: {
 
     // Deploy resulted image to ECS
     deployECS: SimpleAppECS & {
-        infra: awsConfig: {
-            accessKey: input.awsAccessKey
-            secretKey: input.awsSecretKey
-        }
+        infra: awsConfig: awsCreds
         app: {
             hostname: "hello-ecs.infralabs.io"
             containerImage: imagePush.ref
@@ -79,10 +79,7 @@ config: {
 
     // Deploy resulted image to Kubernetes EKS
     deployEKS: SimpleAppEKS & {
-        infra: awsConfig: {
-            accessKey: input.awsAccessKey
-            secretKey: input.awsSecretKey
-        }
+        infra: awsConfig: awsCreds
         app: {
             hostname: "hello-kube.infralabs.io"
             containerImage: imagePush.ref
